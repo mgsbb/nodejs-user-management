@@ -17,8 +17,56 @@ app.use(
 );
 app.use(cookieParser());
 
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const REDIRECT_URI = process.env.REDIRECT_URI;
+const JWT_SECRET = process.env.JWT_SECRET!;
+
 app.get('/', (req, res) => {
     res.send('Hello World');
+});
+
+app.get('/auth/google', (req, res) => {
+    const authorizationUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=email%20profile&access_type=offline`;
+    res.redirect(authorizationUrl);
+});
+
+app.get('/auth/google/callback', async (req, res) => {
+    const code = req.query.code;
+
+    try {
+        const { data } = await axios.post(
+            'https://oauth2.googleapis.com/token',
+            null,
+            {
+                params: {
+                    code,
+                    client_id: CLIENT_ID,
+                    client_secret: CLIENT_SECRET,
+                    redirect_uri: REDIRECT_URI,
+                    grant_type: 'authorization_code',
+                },
+            }
+        );
+
+        const { access_token } = data;
+        const { data: userInfo } = await axios.get(
+            'https://www.googleapis.com/oauth2/v3/userinfo',
+            {
+                headers: {
+                    Authorization: `Bearer ${access_token}`,
+                },
+            }
+        );
+
+        const token = jwt.sign(userInfo, JWT_SECRET, { expiresIn: '1h' });
+
+        res.cookie('token', token, { httpOnly: true, secure: false });
+        res.redirect('http://localhost:5173');
+    } catch (err) {
+        console.error('Failed to exchange token:', err);
+        res.status(500).json({ error: 'Failed to authenticate' });
+    }
 });
 
 app.listen(3000, () => {
