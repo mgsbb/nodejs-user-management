@@ -76,6 +76,32 @@ app.get('/auth/google/callback', async (req, res) => {
     // console.log(req.query);
 
     const code = req.query?.code as string;
+
+    try {
+        // Important Note - The refresh_token is only returned on the first authorization.
+        // also return res, console.log(res) to see url as: 'https://oauth2.googleapis.com/token', and res.data same as tokens
+        // tokens contains { access_token, scope, token_type, id_token, expiry_date }
+        const { tokens } = await oauth2Client.getToken(code);
+
+        oauth2Client.setCredentials(tokens);
+
+        const oauth2 = google.oauth2({ auth: oauth2Client, version: 'v2' });
+
+        // GET request made to URL: https://www.googleapis.com/oauth2/v2/userinfo
+        // data contains { id, email, verified_email, name, given_name, family_name, picture }
+        const { data: userInfo } = await oauth2.userinfo.get();
+
+        const token = jwt.sign(userInfo, JWT_SECRET, { expiresIn: '1h' });
+
+        res.cookie('token', token, { httpOnly: true, secure: false });
+        res.redirect('http://localhost:5173');
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ error: 'Failed to authenticate' });
+    }
+
+    // Without googleapis client library to get tokens and userinfo
+    /* 
     try {
         // data contains { access_token, expires_in, scope, token_type, id_token }
         const { data } = await axios.post(
@@ -112,6 +138,7 @@ app.get('/auth/google/callback', async (req, res) => {
         console.error('Failed to exchange token:', err);
         res.status(500).json({ error: 'Failed to authenticate' });
     }
+    */
 });
 
 app.listen(3000, () => {
