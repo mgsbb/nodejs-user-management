@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 
 import { getOAuth2Client } from '../utils/authUtils';
+import prisma from '../utils/prismaUtils';
 
 // list of googleapis - find google.oauth2 in this list
 const apis = google.getSupportedAPIs();
@@ -78,9 +79,29 @@ export const googleAuthCallback = async (req: Request, res: Response) => {
         // data contains { id, email, verified_email, name, given_name, family_name, picture }
         const { data: userInfo } = await oauth2.userinfo.get();
 
-        const token = jwt.sign(userInfo, process.env.JWT_SECRET!, {
-            expiresIn: '1h',
+        await prisma.user.upsert({
+            where: { googleId: userInfo.id! },
+            update: {
+                accessToken: tokens.access_token,
+                refreshToken: tokens.refresh_token,
+            },
+            create: {
+                googleId: userInfo.id,
+                email: userInfo.email!,
+                name: userInfo.name,
+                picture: userInfo.picture,
+                accessToken: tokens.access_token,
+                refreshToken: tokens.refresh_token,
+            },
         });
+
+        const token = jwt.sign(
+            { id: userInfo.id, method: 'google-oauth2' },
+            process.env.JWT_SECRET!,
+            {
+                expiresIn: '1h',
+            }
+        );
 
         res.cookie('token', token, { httpOnly: true, secure: false });
         res.redirect('http://localhost:5173');
