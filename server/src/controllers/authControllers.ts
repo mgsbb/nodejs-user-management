@@ -143,3 +143,13 @@ export const verifyToken = async (req: Request, res: Response) => {
         res.status(401).json({ error: 'Invalid token' });
     }
 };
+
+export const logout = async (req: Request, res: Response) => {
+    try {
+        res.clearCookie('token');
+        res.status(200).json({ message: 'Logged out successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
