@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 
 import authRouter from './routes/authRoutes';
+import userRouter from './routes/userRoutes';
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use(
 app.use(cookieParser());
 
 app.use('/api/v1', authRouter);
+app.use('/api/v1', userRouter);
 
 app.get('/', (req, res) => {
     res.send('Hello World');
