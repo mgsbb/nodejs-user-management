@@ -1,9 +1,23 @@
-function App() {
-    const handleLogin = () => {
-        window.location.href = 'http://localhost:3000/auth/google';
-    };
+import { BrowserRouter, Routes, Route } from 'react-router';
+import { Login, Profile } from './pages';
+import { ProtectedRoute } from './components/';
 
-    return <button onClick={handleLogin}>Sign in with Google</button>;
+function App() {
+    return (
+        <BrowserRouter>
+            <Routes>
+                <Route path='login' element={<Login />} />
+                <Route
+                    index
+                    element={
+                        <ProtectedRoute>
+                            <Profile />
+                        </ProtectedRoute>
+                    }
+                />
+            </Routes>
+        </BrowserRouter>
+    );
 }
 
 export default App;
