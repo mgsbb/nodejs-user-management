@@ -72,6 +72,11 @@ app.get('/auth/google', (req, res) => {
 });
 
 app.get('/auth/google/callback', async (req, res) => {
+    // req.query contains { state, code, scope, authuser, prompt }
+    // console.log(req.query);
+
+    const code = req.query?.code as string;
+    try {
         // data contains { access_token, expires_in, scope, token_type, id_token }
         const { data } = await axios.post(
             'https://oauth2.googleapis.com/token',
